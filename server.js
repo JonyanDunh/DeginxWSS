@@ -16,6 +16,7 @@ const logger = new Console({
     stdout: output,
     stderr: errOutput
 });
+logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + ">", "DEGINX-WEBSOCKET服务开始运行!")
 var server = ws.createServer(function(conn) {
     var sender_ip_str = "IpAddress:[" + conn.socket.remoteAddress + "]";
     conn.sendText("连接成功")
@@ -151,10 +152,3 @@ process.on('uncaughtException', function(err) {
     //打印出错误
     logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + err);
 });
-
-function output_log(log) {
-    fs.appendFile("log.txt", log, (error) => {
-        if (error) return logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + "追加文件失败" + error.message);
-    });
-    logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + log);
-}
