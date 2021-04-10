@@ -19,8 +19,7 @@ const logger = new Console({
 logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + ">", "DEGINX-WEBSOCKET服务开始运行!")
 var server = ws.createServer(function(conn) {
     var sender_ip_str = "IpAddress:[" + conn.socket.remoteAddress + "]";
-    conn.sendText("尝试进行身份验证")
-    logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, "连接成功");
+    logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, "尝试进行身份验证");
     conn.on("text", function(json) {
         conn.info = JSON.parse(json);
         check_id(conn.info.uuid, conn.info.key, function(result) {
@@ -28,7 +27,7 @@ var server = ws.createServer(function(conn) {
                 conn.sendText(sender_ip_str + " 身份验证失败!请检查UUID或KEY的正确性")
                 logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, "身份验证失败!请检查UUID或KEY的正确性!")
             } else {
-                logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, "身份成功:[" + conn.info.uuid + "] !允许进行信息交互!")
+                logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, "身份验证成功! UUID:[" + conn.info.uuid + "] 允许进行信息交互!")
                 send_msg(conn)
             }
         })
