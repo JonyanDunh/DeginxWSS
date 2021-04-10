@@ -65,12 +65,12 @@ function send_msg(conn) {
     services[Info.group][Info.uuid] = obj;
     sender_group_str = "Group:(" + conn.info.group + ")";
     sender_uuid_str = "UUID:{" + conn.info.uuid + "}";
-    recipient_group = "Group:(" + conn.info.send_msg.recipient_group + ")";
-    send_content = "Content:\"" + conn.info.send_msg.msg_content + "\"";
     switch (Info.action) {
         case "send_msg_to_group":
             content.recipient_group = conn.info.send_msg.recipient_group;
             content.content = conn.info.send_msg.msg_content;
+            recipient_group = content.recipient_group;
+            send_content = content.content;
             if (Info.send_msg.recipient_group in services) {
                 for (let uuid in services[Info.send_msg.recipient_group]) {
                     services[Info.send_msg.recipient_group][uuid].ws.sendText(JSON.stringify(content))
@@ -93,6 +93,8 @@ function send_msg(conn) {
         case "send_msg_to_uuid":
             content.recipient_group = conn.info.send_msg.recipient_group;
             content.content = conn.info.send_msg.msg_content;
+            recipient_group = content.recipient_group;
+            send_content = content.content;
             if (Info.send_msg.recipient_group in services) {
                 recipient_uuid_str = "UUID:{" + Info.send_msg.recipient_uuid + "}";
                 if (Info.send_msg.recipient_uuid in services[Info.send_msg.recipient_group]) {
