@@ -2,6 +2,7 @@ var ws = require("nodejs-websocket")
 var md5 = require('md5-node');
 var services = new Object();
 const fs = require("fs");
+const chinaTime = require('china-time');
 const {
     Console
 } = require('console');
@@ -18,13 +19,13 @@ const logger = new Console({
 var server = ws.createServer(function(conn) {
     var sender_ip_str = "IpAddress:[" + conn.socket.remoteAddress + "]";
     conn.sendText("连接成功")
-    logger.log(sender_ip_str, "连接成功");
+    logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, "连接成功");
     conn.on("text", function(json) {
         conn.info = JSON.parse(json);
         check_id(conn.info.uuid, conn.info.key, function(result) {
             if (result.length == 0) {
                 conn.sendText(sender_ip_str + " 发送数据失败,权限验证不匹配!")
-                logger.log(sender_ip_str, "发送数据失败,权限验证不匹配!")
+                logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, "发送数据失败,权限验证不匹配!")
             } else {
                 send_msg(conn)
             }
@@ -33,13 +34,13 @@ var server = ws.createServer(function(conn) {
     conn.on("close", function(code, reason) {
         if ("info" in conn) {
             if ("uuid" in conn.info) {
-                logger.log(sender_ip_str, sender_uuid_str, '已断开, 代码:', code)
+                logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, sender_uuid_str, '已断开, 代码:', code)
             } else {
                 sender_uuid_str = "UUID:{" + conn.info.uuid + "}";
-                logger.log(sender_ip_str, '已断开, 代码:', code)
+                logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, '已断开, 代码:', code)
             }
         } else {
-            logger.log(sender_ip_str, '已断开, 代码:', code)
+            logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, '已断开, 代码:', code)
         }
     })
 }).listen(10086)
@@ -73,14 +74,14 @@ function send_msg(conn) {
                 for (let uuid in services[Info.send_msg.recipient_group]) {
                     services[Info.send_msg.recipient_group][uuid].ws.sendText(JSON.stringify(content))
                 }
-                logger.log(sender_ip_str, sender_group_str, sender_uuid_str, "=>", recipient_group, send_content, "发送数据成功");
+                logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, sender_group_str, sender_uuid_str, "=>", recipient_group, send_content, "发送数据成功");
                 result = {
                     'code': "200",
                     'msg': "发送数据成功"
                 };
                 conn.sendText(JSON.stringify(result));
             } else {
-                logger.log(sender_ip_str, sender_group_str, sender_uuid_str, "=>", recipient_group, send_content, "发送数据失败, 该群组不存在");
+                logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, sender_group_str, sender_uuid_str, "=>", recipient_group, send_content, "发送数据失败, 该群组不存在");
                 result = {
                     'code': "404",
                     'msg': "发送数据失败, 该群组无终端在线或不存在"
@@ -96,14 +97,14 @@ function send_msg(conn) {
                     content.recipient_group = Info.send_msg.recipient_group;
                     services[Info.send_msg.recipient_group][Info.send_msg.recipient_uuid].ws.sendText(JSON.stringify(content))
                     recipient_ip_str = "IpAddress:[" + services[Info.send_msg.recipient_group][Info.send_msg.recipient_uuid].ws.socket.remoteAddress + "]";
-                    logger.log(sender_ip_str, sender_group_str, sender_uuid_str, "=>", recipient_ip_str, recipient_group, recipient_uuid_str, send_content, "发送数据成功");
+                    logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, sender_group_str, sender_uuid_str, "=>", recipient_ip_str, recipient_group, recipient_uuid_str, send_content, "发送数据成功");
                     result = {
                         'code': "200",
                         'msg': "发送数据成功"
                     };
                     conn.sendText(JSON.stringify(result));
                 } else {
-                    logger.log(sender_ip_str, sender_group_str, sender_uuid_str, "=>", recipient_group, recipient_uuid_str, send_content, "发送数据失败, 该群组不存在");
+                    logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, sender_group_str, sender_uuid_str, "=>", recipient_group, recipient_uuid_str, send_content, "发送数据失败, 该群组不存在");
                     result = {
                         'code': "404",
                         'msg': "发送数据失败, 该UUID不在线或不存在"
@@ -111,7 +112,7 @@ function send_msg(conn) {
                     conn.sendText(JSON.stringify(result));
                 }
             } else {
-                logger.log(sender_ip_str, sender_group_str, sender_uuid_str, "=>", recipient_group, send_content, "发送数据失败, 该群组不存在");
+                logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, sender_group_str, sender_uuid_str, "=>", recipient_group, send_content, "发送数据失败, 该群组不存在");
                 result = {
                     'code': "404",
                     'msg': "发送数据失败, 该群组无终端在线或不存在"
@@ -139,7 +140,7 @@ function check_id(uuid, key, callback) {
     var results;
     connection.query(Sql, SqlParams, function(err, result) {
         if (err) {
-            logger.log('[SELECT ERROR] - ', err.message);
+            logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + '[SELECT ERROR] - ', err.message);
             return;
         }
         callback(result)
@@ -148,12 +149,12 @@ function check_id(uuid, key, callback) {
 }
 process.on('uncaughtException', function(err) {
     //打印出错误
-    logger.log(err);
+    logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + err);
 });
 
 function output_log(log) {
     fs.appendFile("log.txt", log, (error) => {
-        if (error) return logger.log("追加文件失败" + error.message);
+        if (error) return logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + "追加文件失败" + error.message);
     });
-    logger.log(log);
+    logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + log);
 }

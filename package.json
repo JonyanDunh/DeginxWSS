@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "china-time": "^0.12.3",
     "md5-node": "^1.0.1",
     "mysql": "^2.18.1",
     "nodejs-websocket": "^1.7.2",
