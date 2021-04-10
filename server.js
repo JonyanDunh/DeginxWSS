@@ -59,9 +59,7 @@ function send_msg(conn) {
     content = {
         'sender_uuid': conn.info.uuid,
         'sender_group': conn.info.group,
-        'sender_ip': conn.socket.remoteAddress,
-        'recipient_group': conn.info.send_msg.recipient_group,
-        'content': conn.info.send_msg.msg_content,
+        'sender_ip': conn.socket.remoteAddress
     };
     sender_ip_str = "IpAddress:[" + conn.socket.remoteAddress + "]";
     services[Info.group][Info.uuid] = obj;
@@ -71,6 +69,8 @@ function send_msg(conn) {
     send_content = "Content:\"" + conn.info.send_msg.msg_content + "\"";
     switch (Info.action) {
         case "send_msg_to_group":
+            content.recipient_group = conn.info.send_msg.recipient_group;
+            content.content = conn.info.send_msg.msg_content;
             if (Info.send_msg.recipient_group in services) {
                 for (let uuid in services[Info.send_msg.recipient_group]) {
                     services[Info.send_msg.recipient_group][uuid].ws.sendText(JSON.stringify(content))
@@ -91,6 +91,8 @@ function send_msg(conn) {
             }
             break;
         case "send_msg_to_uuid":
+            content.recipient_group = conn.info.send_msg.recipient_group;
+            content.content = conn.info.send_msg.msg_content;
             if (Info.send_msg.recipient_group in services) {
                 recipient_uuid_str = "UUID:{" + Info.send_msg.recipient_uuid + "}";
                 if (Info.send_msg.recipient_uuid in services[Info.send_msg.recipient_group]) {
