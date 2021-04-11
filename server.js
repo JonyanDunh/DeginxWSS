@@ -130,7 +130,7 @@ function check_id(uuid, key, group, callback) {
         database: 'websocket'
     });
     connection.connect();
-    var Sql = "SELECT * FROM uuid_list WHERE `uuid`= ? AND `key`= ? AND `group`= ? ";
+    var Sql = "SELECT * FROM uuid_list WHERE `uuid_md5`= ? AND `key_md5`= ? AND `group_md5`= ? ";
     var SqlParams = [md5(uuid), md5(key), md5(group)];
     //查
     var results;
