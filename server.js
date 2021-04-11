@@ -16,121 +16,112 @@ const logger = new Console({
     stdout: output,
     stderr: errOutput
 });
-logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + ">", "DEGINX-WEBSOCKET服务开始运行!")
 var server = ws.createServer(function(conn) {
+    group = conn.path.split('/')[1];
+    uuid = conn.path.split('/')[2];
+    key = conn.path.split('/')[3];
     var sender_ip_str = "IpAddress:[" + conn.socket.remoteAddress + "]";
-    logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, "尝试进行身份验证");
-    conn.on("text", function(json) {
-        conn.info = JSON.parse(json);
-        check_id(conn.info.uuid, conn.info.key, function(result) {
-            if (result.length == 0) {
-                conn.sendText(sender_ip_str + " 身份验证失败!请检查UUID或KEY的正确性")
-                logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, "身份验证失败!请检查UUID或KEY的正确性!")
-            } else {
-                logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, "身份验证成功! UUID:[" + conn.info.uuid + "] 允许进行信息交互!")
+    //logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, "尝试进行身份验证");
+    check_id(uuid, key, group, function(result) {
+        if (result.length == 0) {
+            conn.send(output_log(conn.socket.remoteAddress, 403, "连接失败!原因：身份验证失败!请检查UUID或KEY的正确性"));
+            logger.log(output_log(conn.socket.remoteAddress, 403, "连接失败!原因：身份验证失败!请检查UUID或KEY的正确性"))
+        } else {
+            conn.send(output_log(conn.socket.remoteAddress, 200, "身份验证成功!", uuid));
+            logger.log(output_log(conn.socket.remoteAddress, 200, "身份验证成功!", uuid));
+            conn.on("text", function(json) {
+                conn.info = JSON.parse(json);
+                conn.info.uuid = uuid;
+                conn.info.group = group;
                 send_msg(conn)
-            }
-        })
+            })
+        }
     })
+
     conn.on("close", function(code, reason) {
         if ("info" in conn) {
             if ("uuid" in conn.info) {
-                logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, sender_uuid_str, '已断开, 代码:', code)
+                logger.log(output_log(conn.socket.remoteAddress, code, "断开连接!", conn.info.uuid));
             } else {
-                sender_uuid_str = "UUID:{" + conn.info.uuid + "}";
-                logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, '已断开, 代码:', code)
+                logger.log(output_log(conn.socket.remoteAddress, code, "断开连接!"));
             }
         } else {
-            logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, '已断开, 代码:', code)
+            logger.log(output_log(conn.socket.remoteAddress, code, "断开连接!", null));
         }
     })
 }).listen(10086)
 
+function output_log(ip, code, msg, uuid, group, content, recipient_group, recipient_uuid, recipient_IpAddress) {
+    log = {};
+    log.time = chinaTime('YYYY-MM-DD HH:mm:ss');
+    log.code = code;
+    log.msg = msg;
+    log.sender_IpAddress = ip;
+    log.sender_uuid = uuid;
+    log.sender_group = group;
+    log.recipient_IpAddress = recipient_IpAddress;
+    log.recipient_uuid = recipient_uuid;
+    log.recipient_group = recipient_group;
+    log.content = content;
+    return JSON.stringify(log);
+}
+
 function send_msg(conn) {
-    Info = conn.info;
-    if (!(Info.group in services)) {
+    if (!(conn.info.group in services)) {
         objs = {}
-        services[Info.group] = objs
+        services[conn.info.group] = objs
     }
-    conn.uuid = Info.uuid;
+    conn.uuid = conn.info.uuid;
     obj = {
         'ws': conn
     };
-    content = {
-        'sender_uuid': conn.info.uuid,
-        'sender_group': conn.info.group,
-        'sender_ip': conn.socket.remoteAddress
-    };
-    sender_ip_str = "IpAddress:[" + conn.socket.remoteAddress + "]";
-    services[Info.group][Info.uuid] = obj;
-    sender_group_str = "Group:(" + conn.info.group + ")";
-    sender_uuid_str = "UUID:{" + conn.info.uuid + "}";
-    switch (Info.action) {
-        case "send_msg_to_group":
-            content.recipient_group = conn.info.send_msg.recipient_group;
-            content.content = conn.info.send_msg.msg_content;
-            recipient_group = content.recipient_group;
-            send_content = content.content;
-            if (Info.send_msg.recipient_group in services) {
-                for (let uuid in services[Info.send_msg.recipient_group]) {
-                    services[Info.send_msg.recipient_group][uuid].ws.sendText(JSON.stringify(content))
-                }
-                logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, sender_group_str, sender_uuid_str, "=>", recipient_group, send_content, "发送数据成功");
-                result = {
-                    'code': "200",
-                    'msg': "发送数据成功"
-                };
-                conn.sendText(JSON.stringify(result));
-            } else {
-                logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, sender_group_str, sender_uuid_str, "=>", recipient_group, send_content, "发送数据失败, 该群组不存在");
-                result = {
-                    'code': "404",
-                    'msg': "发送数据失败, 该群组无终端在线或不存在"
-                };
-                conn.sendText(JSON.stringify(result));
-            }
-            break;
-        case "send_msg_to_uuid":
-            content.recipient_group = conn.info.send_msg.recipient_group;
-            content.content = conn.info.send_msg.msg_content;
-            recipient_group = content.recipient_group;
-            send_content = content.content;
-            if (Info.send_msg.recipient_group in services) {
-                recipient_uuid_str = "UUID:{" + Info.send_msg.recipient_uuid + "}";
-                if (Info.send_msg.recipient_uuid in services[Info.send_msg.recipient_group]) {
-                    content.recipient_uuid = Info.send_msg.recipient_uuid;
-                    content.recipient_group = Info.send_msg.recipient_group;
-                    services[Info.send_msg.recipient_group][Info.send_msg.recipient_uuid].ws.sendText(JSON.stringify(content))
-                    recipient_ip_str = "IpAddress:[" + services[Info.send_msg.recipient_group][Info.send_msg.recipient_uuid].ws.socket.remoteAddress + "]";
-                    logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, sender_group_str, sender_uuid_str, "=>", recipient_ip_str, recipient_group, recipient_uuid_str, send_content, "发送数据成功");
-                    result = {
-                        'code': "200",
-                        'msg': "发送数据成功"
-                    };
-                    conn.sendText(JSON.stringify(result));
+    services[conn.info.group][conn.info.uuid] = obj;
+    if (conn.info.action != "none") {
+        var sender_uuid = conn.info.uuid;
+        var sender_IpAddress = conn.socket.remoteAddress;
+        var sender_group = conn.info.group;
+        var recipient_group = conn.info.send_msg.recipient_group;
+        var content = conn.info.send_msg.msg_content;
+        switch (conn.info.action) {
+            case "send_msg_to_group":
+                if (recipient_group in services) {
+                    for (let uuid in services[recipient_group]) {
+                        services[recipient_group][uuid].ws.send(output_log(sender_IpAddress, 200, "接收数据成功!", sender_uuid, sender_group, content, recipient_group))
+                    }
+                    conn.send(output_log(sender_IpAddress, 200, "发送数据成功!"));
+                    logger.log(output_log(sender_IpAddress, 200, "发送数据成功!", sender_uuid, sender_group, content, recipient_group));
                 } else {
-                    logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, sender_group_str, sender_uuid_str, "=>", recipient_group, recipient_uuid_str, send_content, "发送数据失败, 该群组不存在");
-                    result = {
-                        'code': "404",
-                        'msg': "发送数据失败, 该UUID不在线或不存在"
-                    };
-                    conn.sendText(JSON.stringify(result));
+                    conn.send(output_log(sender_IpAddress, 404, "发送数据失败!接收端不在线或信息有误!"));
+                    logger.log(output_log(sender_IpAddress, 404, "发送数据失败!接收端不在线或信息有误!", sender_uuid, sender_group, content, recipient_group));
                 }
-            } else {
-                logger.log("<" + chinaTime('YYYY-MM-DD HH:mm:ss') + "> " + sender_ip_str, sender_group_str, sender_uuid_str, "=>", recipient_group, send_content, "发送数据失败, 该群组不存在");
-                result = {
-                    'code': "404",
-                    'msg': "发送数据失败, 该群组无终端在线或不存在"
-                };
-                conn.sendText(JSON.stringify(result));
-            }
-            break;
-        case "none":
-            break;
+                break;
+            case "send_msg_to_uuid":
+                var recipient_uuid = conn.info.send_msg.recipient_uuid;
+                var recipient_IpAddress = services[recipient_group][recipient_uuid].ws.socket.remoteAddress;
+                if (recipient_group in services) {
+                    recipient_uuid_str = "UUID:{" + recipient_uuid + "}";
+                    if (recipient_uuid in services[recipient_group]) {
+
+                        services[recipient_group][recipient_uuid].ws.send(output_log(sender_IpAddress, 200, "接收数据成功!", sender_uuid, sender_group, content, recipient_group, recipient_uuid, recipient_IpAddress))
+
+                        logger.log(output_log(sender_IpAddress, 200, "发送数据成功!", sender_uuid, sender_group, content, recipient_group, recipient_uuid, recipient_IpAddress));
+                        conn.send(output_log(sender_IpAddress, 200, "发送数据成功!"));
+                    } else {
+
+                        logger.log(output_log(sender_IpAddress, 404, "发送数据失败!接收端不在线或信息有误!", sender_uuid, sender_group, content, recipient_group, recipient_uuid));
+                        conn.send(output_log(sender_IpAddress, 404, "发送数据失败!接收端不在线或信息有误!"));
+
+                    }
+                } else {
+                    logger.log(output_log(sender_IpAddress, 404, "发送数据失败!接收端不在线或信息有误!", sender_uuid, sender_group, content, recipient_group));
+                    conn.send(output_log(sender_IpAddress, 404, "发送数据失败!接收端不在线或信息有误!"));
+                }
+                break;
+        }
     }
 }
 
-function check_id(uuid, key, callback) {
+function check_id(uuid, key, group, callback) {
     var mysql = require('mysql');
     var connection = mysql.createConnection({
         host: 'localhost',
@@ -139,8 +130,8 @@ function check_id(uuid, key, callback) {
         database: 'websocket'
     });
     connection.connect();
-    var Sql = "SELECT * FROM uuid_list WHERE `uuid`= ? AND `key`= ?";
-    var SqlParams = [md5(uuid), md5(key)];
+    var Sql = "SELECT * FROM uuid_list WHERE `uuid`= ? AND `key`= ? AND `group`= ? ";
+    var SqlParams = [md5(uuid), md5(key), md5(group)];
     //查
     var results;
     connection.query(Sql, SqlParams, function(err, result) {
