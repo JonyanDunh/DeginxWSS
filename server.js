@@ -20,28 +20,26 @@ var server = ws.createServer(function(conn) {
     group = conn.path.split('/')[1];
     uuid = conn.path.split('/')[2];
     key = conn.path.split('/')[3];
-    var sender_ip_str = "IpAddress:[" + conn.socket.remoteAddress + "]";
     check_id(uuid, key, group, function(result) {
         if (result.length == 0) {
             conn.send(output_log(conn.socket.remoteAddress, 403, "连接失败!原因：身份验证失败!请检查UUID或KEY的正确性"));
             logger.log(output_log(conn.socket.remoteAddress, 403, "连接失败!原因：身份验证失败!请检查UUID或KEY的正确性"))
+            conn.close();
         } else {
             conn.send(output_log(conn.socket.remoteAddress, 200, "身份验证成功!", uuid));
             logger.log(output_log(conn.socket.remoteAddress, 200, "身份验证成功!", uuid));
-            conn.info = {};
-            conn.info.uuid = uuid;
-            conn.info.group = group;
+            conn.info = {
+                'uuid': uuid,
+                'group': group
+            };
             if (!(group in services)) {
-                objs = {}
-                services[group] = objs
+                services[group] = {}
             }
-            obj = {
+            services[group][uuid] = {
                 'ws': conn
             };
-            services[group][uuid] = obj;
             conn.on("text", function(json) {
                 Object.assign(conn.info, JSON.parse(json))
-                console.log(conn)
                 send_msg(conn)
             })
 
