@@ -51,6 +51,8 @@ var server = ws.createServer(function(conn) {
             if ("uuid" in conn.info) {
                 logger.log(output_log(conn.socket.remoteAddress, code, "断开连接!", conn.info.uuid));
                 delete services[conn.info.group][conn.info.uuid];
+                if (Object.keys(services[conn.info.group]).length == 0)
+                    delete services[conn.info.group];
             } else {
                 logger.log(output_log(conn.socket.remoteAddress, code, "断开连接!"));
             }
