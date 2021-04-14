@@ -1,0 +1,12 @@
+<input id="files" type="file" accept="image/*" @change="upLoad">
+ 
+ <script type="text/javascript">
+function upLoad(e){
+  console.log(this.getFileUrl(e.srcElement))
+}
+function getFileUrl(obj) { 
+  let url; 
+  url = window.URL.createObjectURL(files.files.item(0)); 
+  return url; 
+}
+</script>
