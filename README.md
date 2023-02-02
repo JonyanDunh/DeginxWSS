@@ -88,6 +88,10 @@ Contributions are what make the open source community such an amazing place to b
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
+## License
+
+DeginxWSS is now open-source, secure, free, and trustworthy under the GNU GPL 3.0 license for mutual progress and transparency to users. This program is distributed under the terms of the GNU General Public License. If necessary, please also comply with the open-source license GNU General Public License
+
 ## Authors
 
 * **Jonyan Dunh** - *A Full Stack developer from China* - [Jonyan Dunh](https://twitter.com/JonyanDunh) - *Whole of the project*
